@@ -27,7 +27,8 @@ var _               = require('lodash'),
     favicon         = require('serve-favicon'),
     session         = require('express-session'),
     MongoStore      = require('connect-mongo')(session),
-    passportConfig  = require('../passport')();
+    passportConfig  = require('../passport')(),
+    nconf           = require('nconf');
 
 
 var middleware = {};
@@ -46,7 +47,7 @@ module.exports = function(app, db, callback) {
     app.set('view engine', 'hbs');
     hbsHelpers.register(hbs.handlebars);
 
-    app.use(favicon(path.join(__dirname, '../../', 'public/img/favicon.ico')));
+    // app.use(favicon(nconf.get('base_dir') + '/public/img/favicon.ico'));
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
     app.use(cookieParser());
@@ -85,23 +86,15 @@ module.exports = function(app, db, callback) {
             app.use(passportConfig.session());
             app.use(flash());
 
-            //Load after Passport!!
-            app.use('/uploads/tickets', function(req, res, next) {
-                if (!req.user) 
-                    return res.redirect('/');
-
-                return next();
-            });
-
             //CORS
             app.use(allowCrossDomain);
             //Mobile
             app.use('/mobile', express.static(path.join(__dirname, '../../', 'mobile')));
 
-            app.use('/uploads/tickets', middleware.redirectToLogin, express.static(path.resolve(__dirname, '/public/uploads/tickets')));
-            app.use('/uploads/users', middleware.redirectToLogin, express.static(path.resolve(__dirname, '/public/uploads/users')));
-            
-            app.use(express.static(path.join(__dirname, '../../', 'public')));
+            app.use('/assets', express.static(nconf.get('base_dir') + '/public/uploads/assets'));
+            app.use('/uploads', middleware.redirectToLogin, express.static(nconf.get('base_dir') + '/public/uploads'));
+
+            app.use(express.static(nconf.get('base_dir') + '/public'));
 
             //Remove to enable plugins
             //next(null, store);
